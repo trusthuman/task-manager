@@ -18,10 +18,11 @@
 const SUPABASE_URL = "https://hgbkthwqixmguavnyljm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg";
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const { createClient } = window.supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function loadTasks() {
-  const { data } = await supabase.from('tasks').select('*');
+  const { data } = await supabaseClient.from('tasks').select('*');
   const list = document.getElementById('list');
   list.innerHTML = '';
   data.forEach(t => {
@@ -33,7 +34,7 @@ async function loadTasks() {
 
 async function addTask() {
   const task = document.getElementById('task').value;
-  await supabase.from('tasks').insert([
+  await supabaseClient.from('tasks').insert([
     { title: task, work_date: new Date().toISOString().slice(0,10), assigned_to: '社員A' }
   ]);
   loadTasks();
