@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>業務管理</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+
+<body>
+  <h2>業務管理アプリ</h2>
+
+  <input id="task" placeholder="業務内容">
+  <button onclick="addTask()">追加</button>
+
+  <ul id="list"></ul>
+
+<script>
+const SUPABASE_URL = "https://hgbkthwqixmguavnyljm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadTasks() {
+  const { data } = await supabase.from('tasks').select('*');
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  data.forEach(t => {
+    const li = document.createElement('li');
+    li.innerText = t.title + " - " + t.status;
+    list.appendChild(li);
+  });
+}
+
+async function addTask() {
+  const task = document.getElementById('task').value;
+  await supabase.from('tasks').insert([
+    { title: task, work_date: new Date().toISOString().slice(0,10), assigned_to: '社員A' }
+  ]);
+  loadTasks();
+}
+
+loadTasks();
+</script>
+</body>
+</html>
