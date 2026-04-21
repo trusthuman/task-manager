@@ -174,20 +174,19 @@
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     function getTaskColor(task) {
-  　　　const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0,10);
 
- 　　　　 if (task.work_date && task.work_date < today && task.status !== "完了") {
-  　　　  return "red"; // quá hạn
- 　　　　 }
+  if (task.work_date && task.work_date < today && task.status !== "完了") {
+    return "red"; // quá hạn
+  }
 
- 　　　　　　 if (task.priority === "緊急") return "red";
-  　　　　　　if (task.status === "書類待ち") return "yellow";
- 　　　　　　 if (task.status === "対応中") return "blue";
- 　　　　　　 if (task.status === "完了") return "green";
+  if (task.priority === "緊急") return "red";
+  if (task.status === "書類待ち") return "yellow";
+  if (task.status === "対応中") return "blue";
+  if (task.status === "完了") return "green";
 
-  　　　　　　return "gray";
+  return "gray";
 }
-    }
 
     async function loadTasks() {
       const { data, error } = await supabaseClient
@@ -229,8 +228,8 @@
                 <span class="badge">${t.priority || "通常"}</span><br>
                 担当者: ${t.assigned_to || "未設定"}<br>
                 日付: ${t.work_date} (${getDaysLeft(t.work_date)})
-               　　　 function getDaysLeft(date) {
- 　　　　　　　　　　　 if (!date) return "";
+ function getDaysLeft(date) {
+  if (!date) return "";
 
   const today = new Date();
   const target = new Date(date);
