@@ -3,21 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>業務管理アプリ Level 1</title>
+  <title>業務管理アプリ Basic Stable</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #eef2f7; color: #1f2937; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
-    .hidden { display: none !important; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0 0 18px; font-size: 32px; font-weight: 800; color: #0f172a; }
     .panel { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 4px 14px rgba(15,23,42,.08); margin-bottom: 16px; }
     .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-    h1 { margin: 0; font-size: 30px; font-weight: 800; color: #0f172a; }
     .sub { font-size: 13px; color: #6b7280; }
     input, select, textarea, button { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid #d1d5db; font-size: 15px; outline: none; }
     textarea { resize: vertical; min-height: 84px; }
     input:focus, select:focus, textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
-    button { border: none; background: #0f172a; color: #fff; cursor: pointer; font-weight: 700; }
+    button { border: none; background: #0f172a; color: white; cursor: pointer; font-weight: 700; }
     button.secondary { background: #e5e7eb; color: #111827; }
     button.danger { background: #dc2626; }
     .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -47,96 +46,68 @@
     .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .actions button { width: auto; min-width: 68px; padding: 10px 12px; font-size: 13px; border-radius: 11px; }
     .empty { background: #fff; border-radius: 16px; padding: 30px; text-align: center; color: #6b7280; box-shadow: 0 4px 14px rgba(15,23,42,.06); }
-    .role { padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
-    .role.manager { background: #dbeafe; color: #1d4ed8; }
-    .role.staff { background: #dcfce7; color: #15803d; }
-    .auth-wrap { max-width: 560px; margin: 40px auto; }
     .hint { margin-top: 8px; font-size: 13px; color: #6b7280; }
     .section-title { font-size: 18px; font-weight: 800; margin: 8px 0 14px; }
     @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } .grid3 { grid-template-columns: 1fr; } }
-    @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } .task-top { flex-direction: column; } h1 { font-size: 26px; } .stats { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } .task-top { flex-direction: column; } h1 { font-size: 28px; } .stats { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
   <div class="container">
-    <div id="authScreen" class="auth-wrap">
-      <div class="panel">
+    <div class="topbar">
+      <div>
         <h1>業務管理アプリ</h1>
-        <div class="sub">Level 1: ログイン / 権限 / 担当者別表示</div>
-        <div class="grid2" style="margin-top:14px">
-          <input id="authEmail" type="email" placeholder="メールアドレス" />
-          <input id="authPassword" type="password" placeholder="パスワード" />
-          <input id="authName" class="full" placeholder="表示名（新規登録時のみ）" />
-          <select id="authRole" class="full">
-            <option value="staff">社員</option>
-            <option value="manager">管理者</option>
-          </select>
-          <button onclick="signIn()">ログイン</button>
-          <button class="secondary" onclick="signUp()">新規登録</button>
-        </div>
-        <div class="hint">新規登録後、確認メールが来る設定の場合はメール確認後にログインしてください。</div>
+        <div class="sub">Basic Stable 版（ログインなし）</div>
+      </div>
+      <button class="secondary" onclick="loadTasks()">再読み込み</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-title">総件数</div><div class="stat-value" id="stat-total">0</div></div>
+      <div class="stat"><div class="stat-title">未着手</div><div class="stat-value" id="stat-todo">0</div></div>
+      <div class="stat"><div class="stat-title">対応中</div><div class="stat-value" id="stat-doing">0</div></div>
+      <div class="stat"><div class="stat-title">完了</div><div class="stat-value" id="stat-done">0</div></div>
+      <div class="stat"><div class="stat-title">遅延</div><div class="stat-value" id="stat-late">0</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="grid2">
+        <input id="title" class="full" placeholder="業務内容" />
+        <input id="user" placeholder="担当者" />
+        <input id="date" type="date" />
+        <select id="status">
+          <option value="未着手">未着手</option>
+          <option value="対応中">対応中</option>
+          <option value="完了">完了</option>
+          <option value="書類待ち">書類待ち</option>
+        </select>
+        <select id="priority">
+          <option value="通常">通常</option>
+          <option value="重要">重要</option>
+          <option value="緊急">緊急</option>
+        </select>
+        <textarea id="note" class="full" placeholder="メモ・結果・連絡内容"></textarea>
+        <button class="full" onclick="addTask()">追加</button>
+      </div>
+      <div class="hint">緊急と期限超過は赤、書類待ちは赤文字で強調、対応中は青、未着手は緑、完了は灰色です。</div>
+    </div>
+
+    <div class="panel">
+      <div class="grid3">
+        <input id="search" placeholder="検索..." oninput="loadTasks()" />
+        <select id="filterStatus" onchange="loadTasks()">
+          <option value="">全ての状態</option>
+          <option value="未着手">未着手</option>
+          <option value="対応中">対応中</option>
+          <option value="完了">完了</option>
+          <option value="書類待ち">書類待ち</option>
+        </select>
+        <input id="filterUser" placeholder="担当者で絞り込み" oninput="loadTasks()" />
       </div>
     </div>
 
-    <div id="appScreen" class="hidden">
-      <div class="topbar">
-        <div>
-          <h1>業務管理アプリ</h1>
-          <div class="sub" id="userInfo"></div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="secondary" onclick="loadTasks()">再読み込み</button>
-          <button class="danger" onclick="signOutUser()">ログアウト</button>
-        </div>
-      </div>
-
-      <div class="stats">
-        <div class="stat"><div class="stat-title">総件数</div><div class="stat-value" id="stat-total">0</div></div>
-        <div class="stat"><div class="stat-title">未着手</div><div class="stat-value" id="stat-todo">0</div></div>
-        <div class="stat"><div class="stat-title">対応中</div><div class="stat-value" id="stat-doing">0</div></div>
-        <div class="stat"><div class="stat-title">完了</div><div class="stat-value" id="stat-done">0</div></div>
-        <div class="stat"><div class="stat-title">遅延</div><div class="stat-value" id="stat-late">0</div></div>
-      </div>
-
-      <div class="panel">
-        <div class="grid2">
-          <input id="title" class="full" placeholder="業務内容" />
-          <input id="user" placeholder="担当者" />
-          <input id="date" type="date" />
-          <select id="status">
-            <option value="未着手">未着手</option>
-            <option value="対応中">対応中</option>
-            <option value="完了">完了</option>
-            <option value="書類待ち">書類待ち</option>
-          </select>
-          <select id="priority">
-            <option value="通常">通常</option>
-            <option value="重要">重要</option>
-            <option value="緊急">緊急</option>
-          </select>
-          <textarea id="note" class="full" placeholder="メモ・結果・連絡内容"></textarea>
-          <button class="full" onclick="addTask()">追加</button>
-        </div>
-        <div class="hint">管理者は全件表示、社員は自分の担当業務のみ表示されます。完了は自動で下へ移動します。</div>
-      </div>
-
-      <div class="panel">
-        <div class="grid3">
-          <input id="search" placeholder="検索..." oninput="loadTasks()" />
-          <select id="filterStatus" onchange="loadTasks()">
-            <option value="">全ての状態</option>
-            <option value="未着手">未着手</option>
-            <option value="対応中">対応中</option>
-            <option value="完了">完了</option>
-            <option value="書類待ち">書類待ち</option>
-          </select>
-          <input id="filterUser" placeholder="担当者で絞り込み" oninput="loadTasks()" />
-        </div>
-      </div>
-
-      <div class="section-title">業務一覧</div>
-      <div id="list"></div>
-    </div>
+    <div class="section-title">業務一覧</div>
+    <div id="list"></div>
   </div>
 
   <script>
@@ -144,10 +115,6 @@
     const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg";
     const { createClient } = window.supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let currentUser = null;
-    let currentProfile = null;
-    let isLoadingProfile = false;
 
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
@@ -177,11 +144,6 @@
         .replaceAll("'", "&#039;");
     }
 
-    function setScreen(loggedIn) {
-      document.getElementById("authScreen").classList.toggle("hidden", loggedIn);
-      document.getElementById("appScreen").classList.toggle("hidden", !loggedIn);
-    }
-
     function getTaskColor(task) {
       if (task.status === "完了") return "gray";
       if (isLate(task)) return "red";
@@ -207,98 +169,6 @@
       return html;
     }
 
-    async function writeLog(action, taskId, detail) {
-      if (!currentUser) return;
-      try {
-        await supabaseClient.from("task_logs").insert([{
-          user_id: currentUser.id,
-          user_email: currentUser.email,
-          user_name: currentProfile?.display_name || currentUser.email,
-          action,
-          task_id: taskId || null,
-          detail: detail || ""
-        }]);
-      } catch (_) {}
-    }
-
-    async function signUp() {
-      const email = document.getElementById("authEmail").value.trim();
-      const password = document.getElementById("authPassword").value;
-      const displayName = document.getElementById("authName").value.trim();
-      const role = document.getElementById("authRole").value;
-      if (!email || !password || !displayName) {
-        alert("メール・パスワード・表示名を入力してください");
-        return;
-      }
-      const { data, error } = await supabaseClient.auth.signUp({ email, password });
-      if (error) {
-        alert("登録エラー: " + error.message);
-        return;
-      }
-      const userId = data.user?.id;
-      if (userId) {
-        const { error: profileError } = await supabaseClient.from("profiles").upsert([{
-          id: userId,
-          email,
-          display_name: displayName,
-          role
-        }]);
-        if (profileError) {
-          alert("プロフィール作成エラー: " + profileError.message);
-          return;
-        }
-      }
-      alert("登録しました。確認メールが必要な場合は確認後にログインしてください。");
-    }
-
-    async function signIn() {
-      const email = document.getElementById("authEmail").value.trim();
-      const password = document.getElementById("authPassword").value;
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) {
-        alert("ログインエラー: " + error.message);
-      }
-    }
-
-    async function signOutUser() {
-      await supabaseClient.auth.signOut();
-    }
-
-    async function loadCurrentProfile() {
-      if (!currentUser || isLoadingProfile) return null;
-      isLoadingProfile = true;
-      try {
-        const { data, error } = await supabaseClient
-          .from("profiles")
-          .select("*")
-          .eq("id", currentUser.id)
-          .single();
-
-        if (error) {
-          alert("プロフィール取得エラー: " + error.message);
-          return null;
-        }
-
-        currentProfile = data;
-        document.getElementById("userInfo").innerHTML = `ログイン中: <b>${escapeHtml(data.display_name || currentUser.email)}</b> <span class="role ${data.role === "manager" ? "manager" : "staff"}">${data.role === "manager" ? "管理者" : "社員"}</span>`;
-
-        const userInput = document.getElementById("user");
-        const filterUser = document.getElementById("filterUser");
-        if (data.role === "staff") {
-          userInput.value = data.display_name || currentUser.email;
-          userInput.disabled = true;
-          filterUser.value = data.display_name || currentUser.email;
-          filterUser.disabled = true;
-        } else {
-          userInput.disabled = false;
-          filterUser.disabled = false;
-        }
-        return data;
-      } finally {
-        isLoadingProfile = false;
-      }
-    }
-
     function renderStats(tasks) {
       document.getElementById("stat-total").textContent = tasks.length;
       document.getElementById("stat-todo").textContent = tasks.filter(t => t.status === "未着手").length;
@@ -316,7 +186,6 @@
       }
 
       tasks.forEach((t, index) => {
-        const canEdit = currentProfile?.role === "manager" || (t.owner_id === currentUser.id);
         const div = document.createElement("div");
         div.className = `task ${getTaskColor(t)}`;
         div.innerHTML = `
@@ -334,16 +203,14 @@
             <div><b>順位: ${index + 1}</b></div>
           </div>
           <div class="actions">
-            ${canEdit ? `
-              <button onclick="updateStatus('${t.id}','未着手')">未着手</button>
-              <button onclick="updateStatus('${t.id}','対応中')">対応中</button>
-              <button onclick="updateStatus('${t.id}','完了')">完了</button>
-              <button onclick="updateStatus('${t.id}','書類待ち')">書類待ち</button>
-              <button class="secondary" onclick="editTask('${t.id}')">編集</button>
-              <button class="secondary" onclick="moveUp('${t.id}')">↑ 上へ</button>
-              <button class="secondary" onclick="moveDown('${t.id}')">↓ 下へ</button>
-              <button class="danger" onclick="deleteTask('${t.id}')">削除</button>
-            ` : ""}
+            <button onclick="updateStatus('${t.id}','未着手')">未着手</button>
+            <button onclick="updateStatus('${t.id}','対応中')">対応中</button>
+            <button onclick="updateStatus('${t.id}','完了')">完了</button>
+            <button onclick="updateStatus('${t.id}','書類待ち')">書類待ち</button>
+            <button class="secondary" onclick="editTask('${t.id}')">編集</button>
+            <button class="secondary" onclick="moveUp('${t.id}')">↑ 上へ</button>
+            <button class="secondary" onclick="moveDown('${t.id}')">↓ 下へ</button>
+            <button class="danger" onclick="deleteTask('${t.id}')">削除</button>
           </div>
         `;
         list.appendChild(div);
@@ -351,12 +218,7 @@
     }
 
     async function loadTasks() {
-      if (!currentUser || !currentProfile) return;
-      let query = supabaseClient.from("tasks").select("*");
-      if (currentProfile.role !== "manager") {
-        query = query.eq("owner_id", currentUser.id);
-      }
-      const { data, error } = await query;
+      const { data, error } = await supabaseClient.from("tasks").select("*");
       if (error) {
         alert("読込エラー: " + error.message);
         return;
@@ -397,11 +259,8 @@
     }
 
     async function addTask() {
-      if (!currentUser || !currentProfile) return;
       const title = document.getElementById("title").value.trim();
-      const assigned_to = currentProfile.role === "staff"
-        ? (currentProfile.display_name || currentUser.email)
-        : (document.getElementById("user").value.trim() || "未設定");
+      const assigned_to = document.getElementById("user").value.trim() || "未設定";
       const work_date = document.getElementById("date").value || todayStr();
       const status = document.getElementById("status").value;
       const priority = document.getElementById("priority").value;
@@ -428,33 +287,23 @@
           ? maxData[0].sort_order + 1
           : 1;
 
-      const ownerId = currentProfile.role === "staff" ? currentUser.id : currentUser.id;
-
-      const { data: inserted, error } = await supabaseClient
-        .from("tasks")
-        .insert([{
-          title,
-          assigned_to,
-          work_date,
-          status,
-          priority,
-          note,
-          sort_order: nextSortOrder,
-          owner_id: ownerId,
-          created_by: currentUser.id
-        }])
-        .select()
-        .single();
+      const { error } = await supabaseClient.from("tasks").insert([{
+        title,
+        assigned_to,
+        work_date,
+        status,
+        priority,
+        note,
+        sort_order: nextSortOrder
+      }]);
 
       if (error) {
         alert("追加エラー: " + error.message);
         return;
       }
 
-      await writeLog("create", inserted?.id, `title=${title}`);
-
       document.getElementById("title").value = "";
-      if (currentProfile.role === "manager") document.getElementById("user").value = "";
+      document.getElementById("user").value = "";
       document.getElementById("date").value = "";
       document.getElementById("status").value = "未着手";
       document.getElementById("priority").value = "通常";
@@ -483,7 +332,7 @@
 
         const { error } = await supabaseClient
           .from("tasks")
-          .update({ status: "完了", sort_order: nextSortOrder, updated_by: currentUser.id })
+          .update({ status: "完了", sort_order: nextSortOrder })
           .eq("id", id);
 
         if (error) {
@@ -491,14 +340,13 @@
           return;
         }
 
-        await writeLog("status", id, "完了");
         await loadTasks();
         return;
       }
 
       const { error } = await supabaseClient
         .from("tasks")
-        .update({ status, updated_by: currentUser.id })
+        .update({ status })
         .eq("id", id);
 
       if (error) {
@@ -506,17 +354,11 @@
         return;
       }
 
-      await writeLog("status", id, status);
       await loadTasks();
     }
 
     async function editTask(id) {
-      const { data, error } = await supabaseClient
-        .from("tasks")
-        .select("*")
-        .eq("id", id)
-        .single();
-
+      const { data, error } = await supabaseClient.from("tasks").select("*").eq("id", id).single();
       if (error) {
         alert("取得エラー: " + error.message);
         return;
@@ -529,9 +371,7 @@
         return;
       }
 
-      const newUser = currentProfile.role === "staff"
-        ? (currentProfile.display_name || currentUser.email)
-        : prompt("担当者を入力してください", data.assigned_to || "未設定");
+      const newUser = prompt("担当者を入力してください", data.assigned_to || "未設定");
       if (newUser === null) return;
 
       const newDate = prompt("日付を入力してください（例: 2026-04-22）", data.work_date || todayStr());
@@ -540,23 +380,18 @@
       const newNote = prompt("メモを入力してください", data.note || "");
       if (newNote === null) return;
 
-      const { error: updateError } = await supabaseClient
-        .from("tasks")
-        .update({
-          title: newTitle.trim(),
-          assigned_to: (newUser || "").trim() || "未設定",
-          work_date: newDate || todayStr(),
-          note: newNote.trim(),
-          updated_by: currentUser.id
-        })
-        .eq("id", id);
+      const { error: updateError } = await supabaseClient.from("tasks").update({
+        title: newTitle.trim(),
+        assigned_to: (newUser || "").trim() || "未設定",
+        work_date: newDate || todayStr(),
+        note: newNote.trim()
+      }).eq("id", id);
 
       if (updateError) {
         alert("編集エラー: " + updateError.message);
         return;
       }
 
-      await writeLog("edit", id, `title=${newTitle.trim()}`);
       await loadTasks();
     }
 
@@ -567,14 +402,14 @@
         alert("削除エラー: " + error.message);
         return;
       }
-      await writeLog("delete", id, "deleted");
       await loadTasks();
     }
 
     async function moveTask(id, direction) {
-      let query = supabaseClient.from("tasks").select("id, sort_order, status");
-      if (currentProfile.role !== "manager") query = query.eq("owner_id", currentUser.id);
-      const { data, error } = await query;
+      const { data, error } = await supabaseClient
+        .from("tasks")
+        .select("id, sort_order, status");
+
       if (error) {
         alert("並び替えエラー: " + error.message);
         return;
@@ -598,45 +433,13 @@
       const { error: err3 } = await supabaseClient.from("tasks").update({ sort_order: targetOrder }).eq("id", current.id);
       if (err3) { alert("並び替えエラー: " + err3.message); return; }
 
-      await writeLog("sort", id, direction === -1 ? "up" : "down");
       await loadTasks();
     }
 
     function moveUp(id) { moveTask(id, -1); }
     function moveDown(id) { moveTask(id, 1); }
 
-    async function bootApp() {
-      const { data, error } = await supabaseClient.auth.getUser();
-      if (error) {
-        setScreen(false);
-        return;
-      }
-      currentUser = data.user || null;
-      if (!currentUser) {
-        currentProfile = null;
-        setScreen(false);
-        return;
-      }
-      setScreen(true);
-      const profile = await loadCurrentProfile();
-      if (profile) await loadTasks();
-    }
-
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      currentUser = session?.user || null;
-      if (!currentUser) {
-        currentProfile = null;
-        setScreen(false);
-        return;
-      }
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        setScreen(true);
-        const profile = await loadCurrentProfile();
-        if (profile) await loadTasks();
-      }
-    });
-
-    bootApp();
+    loadTasks();
   </script>
 </body>
 </html>
