@@ -1,645 +1,258 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>業務管理アプリ</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務管理アプリ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #eef2f7;
-      color: #1f2937;
-    }
+<style>
+body { font-family: Arial; background:#eef2f7; padding:20px; }
 
-    .container {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+.panel { background:#fff; padding:15px; border-radius:12px; margin-bottom:15px; }
 
-    h1 {
-      margin: 0 0 18px;
-      font-size: 34px;
-      font-weight: 800;
-      color: #0f172a;
-    }
+input, select, textarea, button {
+  padding:10px; border-radius:8px; border:1px solid #ccc; margin:5px;
+}
 
-    .panel {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
-      margin-bottom: 16px;
-    }
+button { background:#111; color:#fff; cursor:pointer; }
 
-    .form-grid, .filters {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
+.task {
+  border-left:8px solid #999;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
+}
 
-    .filters {
-      grid-template-columns: 1.2fr 1fr 1fr;
-    }
+/* MÀU */
+.task.red { background:#fecaca; border-color:#dc2626; }
+.task.yellow { background:#fde68a; border-color:#d97706; }
+.task.blue { background:#93c5fd; border-color:#2563eb; }
+.task.green { background:#86efac; border-color:#16a34a; } /* 未着手 */
+.task.gray { background:#f3f4f6; border-color:#6b7280; } /* 完了 */
 
-    .full {
-      grid-column: 1 / -1;
-    }
+/* BADGE */
+.badge { padding:3px 8px; border-radius:999px; font-size:12px; margin-right:5px; }
 
-    input, select, textarea, button {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid #d1d5db;
-      font-size: 15px;
-      outline: none;
-    }
+.badge.red { background:#dc2626; color:#fff; }
+.badge.yellow { background:#d97706; color:#fff; }
+.badge.blue { background:#2563eb; color:#fff; }
+.badge.green { background:#16a34a; color:#fff; }
+.badge.gray { background:#6b7280; color:#fff; }
 
-    textarea {
-      resize: vertical;
-      min-height: 84px;
-    }
+.warning { color:red; font-weight:bold; margin-top:5px; }
 
-    input:focus, select:focus, textarea:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    }
-
-    button {
-      border: none;
-      background: #0f172a;
-      color: #fff;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    button:hover {
-      opacity: 0.95;
-    }
-
-    .secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .danger {
-      background: #dc2626;
-      color: white;
-    }
-
-    .hint {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #6b7280;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .stat {
-      background: #fff;
-      border-radius: 16px;
-      padding: 14px;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-    }
-
-    .stat-title {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
-    .task {
-      border-radius: 18px;
-      padding: 16px;
-      margin-bottom: 14px;
-      border-left: 9px solid #6b7280;
-      background: #ffffff;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-    }
-
-    /* ĐÃ ĐỔI MÀU THEO YÊU CẦU:
-       未着手 = xanh
-       完了 = trắng xám
-    */
-    .task.red { border-left-color: #dc2626; background: #fecaca; }
-    .task.yellow { border-left-color: #d97706; background: #fde68a; }
-    .task.blue { border-left-color: #2563eb; background: #93c5fd; }
-    .task.green { border-left-color: #16a34a; background: #86efac; } /* 未着手 */
-    .task.gray { border-left-color: #6b7280; background: #f3f4f6; }  /* 完了 */
-
-    .task-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .task-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: #111827;
-      margin-bottom: 8px;
-    }
-
-    .meta {
-      font-size: 14px;
-      color: #1f2937;
-      line-height: 1.8;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      background: rgba(255,255,255,0.8);
-      color: #111827;
-      margin-right: 6px;
-      margin-bottom: 6px;
-    }
-
-    .note {
-      margin-top: 10px;
-      padding: 10px 12px;
-      background: rgba(255,255,255,0.65);
-      border-radius: 12px;
-      font-size: 14px;
-    }
-
-    .warning {
-      margin-top: 10px;
-      color: #991b1b;
-      font-weight: 800;
-      font-size: 14px;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .actions button {
-      width: auto;
-      min-width: 68px;
-      padding: 10px 12px;
-      font-size: 13px;
-      border-radius: 11px;
-    }
-
-    .empty {
-      background: #fff;
-      border-radius: 16px;
-      padding: 30px;
-      text-align: center;
-      color: #6b7280;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-    }
-
-    .section-title {
-      font-size: 18px;
-      font-weight: 800;
-      margin: 8px 0 14px;
-      color: #0f172a;
-    }
-
-    @media (max-width: 900px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-      .filters { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 700px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .task-top { flex-direction: column; }
-      h1 { font-size: 28px; }
-      .stats { grid-template-columns: 1fr 1fr; }
-    }
-  </style>
+.actions button { margin:3px; }
+</style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="topbar">
-      <h1>業務管理アプリ</h1>
-      <button class="secondary" onclick="refreshTasks()">再読み込み</button>
+
+<h2>業務管理</h2>
+
+<div class="panel">
+<input id="title" placeholder="業務内容">
+<input id="user" placeholder="担当者">
+<input id="date" type="date">
+
+<select id="status">
+<option>未着手</option>
+<option>対応中</option>
+<option>完了</option>
+<option>書類待ち</option>
+</select>
+
+<select id="priority">
+<option>通常</option>
+<option>重要</option>
+<option>緊急</option>
+</select>
+
+<textarea id="note" placeholder="メモ"></textarea>
+
+<button onclick="addTask()">追加</button>
+</div>
+
+<div id="list"></div>
+
+<script>
+const SUPABASE_URL = "https://hgbkthwqixmguavnyljm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg";
+
+const { createClient } = window.supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function getDays(date){
+  if(!date) return "";
+  const d = new Date(date);
+  const t = new Date(today());
+  const diff = Math.ceil((d-t)/(1000*60*60*24));
+
+  if(diff<0) return "遅れ";
+  if(diff===0) return "今日";
+  return "あと"+diff+"日";
+}
+
+function isLate(t){
+  return t.work_date && t.work_date < today() && t.status !== "完了";
+}
+
+function getColor(t){
+  if(isLate(t)) return "red";
+  if(t.priority==="緊急") return "red";
+  if(t.status==="書類待ち") return "yellow";
+  if(t.status==="対応中") return "blue";
+  if(t.status==="未着手") return "green";
+  if(t.status==="完了") return "gray";
+  return "gray";
+}
+
+function badge(t){
+  let b = "";
+
+  if(t.priority==="緊急") b += `<span class="badge red">緊急</span>`;
+  if(isLate(t)) b += `<span class="badge red">遅れ</span>`;
+  if(t.status==="書類待ち") b += `<span class="badge red">書類待ち</span>`;
+
+  b += `<span class="badge gray">${t.status}</span>`;
+
+  return b;
+}
+
+async function loadTasks(){
+  const { data } = await supabase.from("tasks").select("*");
+
+  let tasks = data || [];
+
+  tasks.sort((a,b)=>{
+    const aDone = a.status==="完了"?1:0;
+    const bDone = b.status==="完了"?1:0;
+
+    if(aDone!==bDone) return aDone - bDone;
+
+    return (a.sort_order||0)-(b.sort_order||0);
+  });
+
+  const list = document.getElementById("list");
+  list.innerHTML="";
+
+  tasks.forEach((t,i)=>{
+    const div = document.createElement("div");
+    div.className="task "+getColor(t);
+
+    div.innerHTML = `
+    <b>${t.title}</b><br>
+    ${badge(t)}<br>
+    担当: ${t.assigned_to || "未設定"}<br>
+    日付: ${t.work_date || ""} (${getDays(t.work_date)})<br>
+    ${t.note||""}
+
+    ${t.status==="未着手" && isLate(t) ? `<div class="warning">⚠ 未対応</div>`:""}
+
+    <div class="actions">
+    <button onclick="updateStatus('${t.id}','未着手')">未着手</button>
+    <button onclick="updateStatus('${t.id}','対応中')">対応中</button>
+    <button onclick="updateStatus('${t.id}','完了')">完了</button>
+    <button onclick="updateStatus('${t.id}','書類待ち')">書類待ち</button>
+
+    <button onclick="moveUp('${t.id}')">↑</button>
+    <button onclick="moveDown('${t.id}')">↓</button>
+
+    <button onclick="deleteTask('${t.id}')">削除</button>
     </div>
+    `;
 
-    <div class="stats">
-      <div class="stat"><div class="stat-title">総件数</div><div class="stat-value" id="stat-total">0</div></div>
-      <div class="stat"><div class="stat-title">未着手</div><div class="stat-value" id="stat-todo">0</div></div>
-      <div class="stat"><div class="stat-title">対応中</div><div class="stat-value" id="stat-doing">0</div></div>
-      <div class="stat"><div class="stat-title">完了</div><div class="stat-value" id="stat-done">0</div></div>
-      <div class="stat"><div class="stat-title">遅延</div><div class="stat-value" id="stat-late">0</div></div>
-    </div>
-
-    <div class="panel">
-      <div class="form-grid">
-        <input id="title" class="full" placeholder="業務内容" />
-        <input id="user" placeholder="担当者" />
-        <input id="date" type="date" />
-        <select id="status">
-          <option value="未着手">未着手</option>
-          <option value="対応中">対応中</option>
-          <option value="完了">完了</option>
-          <option value="書類待ち">書類待ち</option>
-        </select>
-        <select id="priority">
-          <option value="通常">通常</option>
-          <option value="重要">重要</option>
-          <option value="緊急">緊急</option>
-        </select>
-        <textarea id="note" class="full" placeholder="メモ・結果・連絡内容"></textarea>
-        <button class="full" onclick="addTask()">追加</button>
-      </div>
-      <div class="hint">緊急と期限超過は赤、書類待ちは黄、対応中は青、未着手は緑、完了は灰色で表示されます。</div>
-    </div>
-
-    <div class="panel">
-      <div class="filters">
-        <input id="search" placeholder="検索..." oninput="loadTasks()" />
-        <select id="filterStatus" onchange="loadTasks()">
-          <option value="">全ての状態</option>
-          <option value="未着手">未着手</option>
-          <option value="対応中">対応中</option>
-          <option value="完了">完了</option>
-          <option value="書類待ち">書類待ち</option>
-        </select>
-        <input id="filterUser" placeholder="担当者で絞り込み" oninput="loadTasks()" />
-      </div>
-    </div>
-
-    <div class="section-title">業務一覧</div>
-    <div id="list"></div>
-  </div>
-
-  <script>
-    const SUPABASE_URL = "https://hgbkthwqixmguavnyljm.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg";
-
-    const { createClient } = window.supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    function todayStr() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    function getDaysText(date) {
-      if (!date) return "";
-      const today = new Date(todayStr());
-      const target = new Date(date);
-      const diff = Math.round((target - today) / (1000 * 60 * 60 * 24));
-      if (diff < 0) return `遅れ ${Math.abs(diff)}日`;
-      if (diff === 0) return "今日";
-      return `あと${diff}日`;
-    }
-
-    function isLate(task) {
-      return !!task.work_date && task.work_date < todayStr() && task.status !== "完了";
-    }
-
-    function getTaskColor(task) {
-      if (isLate(task)) return "red";
-      if (task.priority === "緊急") return "red";
-      if (task.status === "書類待ち") return "yellow";
-      if (task.status === "対応中") return "blue";
-      if (task.status === "未着手") return "green";
-      if (task.status === "完了") return "gray";
-      return "gray";
-    }
-
-    function escapeHtml(value) {
-      if (value == null) return "";
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    async function refreshTasks() {
-      await loadTasks();
-    }
-
-    async function loadTasks() {
-      const { data, error } = await supabaseClient
-        .from("tasks")
-        .select("*")
-        .order("sort_order", { ascending: true });
-
-      if (error) {
-        alert("読込エラー: " + error.message);
-        return;
-      }
-
-      const tasks = (data || []).map(t => ({
-        ...t,
-        priority: t.priority || "通常",
-        status: t.status || "未着手",
-        assigned_to: t.assigned_to || "未設定",
-        note: t.note || "",
-        sort_order: typeof t.sort_order === "number" ? t.sort_order : 999999
-      }));
-
-      const search = (document.getElementById("search").value || "").toLowerCase();
-      const filterStatus = document.getElementById("filterStatus").value || "";
-      const filterUser = (document.getElementById("filterUser").value || "").toLowerCase();
-
-      const filtered = tasks.filter(t => {
-        const matchSearch =
-          (t.title || "").toLowerCase().includes(search) ||
-          (t.assigned_to || "").toLowerCase().includes(search) ||
-          (t.note || "").toLowerCase().includes(search);
-
-        const matchStatus = !filterStatus || t.status === filterStatus;
-        const matchUser = !filterUser || (t.assigned_to || "").toLowerCase().includes(filterUser);
-
-        return matchSearch && matchStatus && matchUser;
-      });
-
-      renderStats(filtered);
-      renderTasks(filtered);
-    }
-
-    function renderStats(tasks) {
-      document.getElementById("stat-total").textContent = tasks.length;
-      document.getElementById("stat-todo").textContent = tasks.filter(t => t.status === "未着手").length;
-      document.getElementById("stat-doing").textContent = tasks.filter(t => t.status === "対応中").length;
-      document.getElementById("stat-done").textContent = tasks.filter(t => t.status === "完了").length;
-      document.getElementById("stat-late").textContent = tasks.filter(t => isLate(t)).length;
-    }
-
-    function renderTasks(tasks) {
-      const list = document.getElementById("list");
-      list.innerHTML = "";
-
-      if (!tasks.length) {
-        list.innerHTML = '<div class="empty">業務がありません。</div>';
-        return;
-      }
-
-      tasks.forEach((t, index) => {
-        const div = document.createElement("div");
-        div.className = `task ${getTaskColor(t)}`;
-        div.innerHTML = `
-          <div class="task-top">
-            <div>
-              <div class="task-title">${escapeHtml(t.title || "(無題)")}</div>
-              <div>
-                <span class="badge">${escapeHtml(t.status)}</span>
-                <span class="badge">${escapeHtml(t.priority)}</span>
-                ${isLate(t) ? '<span class="badge">期限超過</span>' : ''}
-              </div>
-              <div class="meta">
-                担当者: ${escapeHtml(t.assigned_to)}<br>
-                日付: ${escapeHtml(t.work_date || "")} ${t.work_date ? `(${escapeHtml(getDaysText(t.work_date))})` : ""}
-              </div>
-              ${t.note ? `<div class="note">${escapeHtml(t.note)}</div>` : ""}
-              ${(t.status === "未着手" && isLate(t)) ? '<div class="warning">⚠ 未対応のまま期限を超過しています</div>' : ''}
-            </div>
-            <div><b>順位: ${index + 1}</b></div>
-          </div>
-
-          <div class="actions">
-            <button onclick="updateStatus('${t.id}','未着手')">未着手</button>
-            <button onclick="updateStatus('${t.id}','対応中')">対応中</button>
-            <button onclick="updateStatus('${t.id}','完了')">完了</button>
-            <button onclick="updateStatus('${t.id}','書類待ち')">書類待ち</button>
-            <button class="secondary" onclick="editTask('${t.id}')">編集</button>
-            <button class="secondary" onclick="moveUp('${t.id}')">↑ 上へ</button>
-            <button class="secondary" onclick="moveDown('${t.id}')">↓ 下へ</button>
-            <button class="danger" onclick="deleteTask('${t.id}')">削除</button>
-          </div>
-        `;
-        list.appendChild(div);
-      });
-    }
-
-    async function addTask() {
-      const title = document.getElementById("title").value.trim();
-      const assigned_to = document.getElementById("user").value.trim() || "未設定";
-      const work_date = document.getElementById("date").value || todayStr();
-      const status = document.getElementById("status").value;
-      const priority = document.getElementById("priority").value;
-      const note = document.getElementById("note").value.trim();
-
-      if (!title) {
-        alert("業務内容を入力してください");
-        return;
-      }
-
-      const { data: maxData, error: maxError } = await supabaseClient
-        .from("tasks")
-        .select("sort_order")
-        .order("sort_order", { ascending: false })
-        .limit(1);
-
-      if (maxError) {
-        alert("追加準備エラー: " + maxError.message);
-        return;
-      }
-
-      const nextSortOrder =
-        maxData && maxData.length && typeof maxData[0].sort_order === "number"
-          ? maxData[0].sort_order + 1
-          : 1;
-
-      const { error } = await supabaseClient
-        .from("tasks")
-        .insert([{
-          title,
-          assigned_to,
-          work_date,
-          status,
-          priority,
-          note,
-          sort_order: nextSortOrder
-        }]);
-
-      if (error) {
-        alert("追加エラー: " + error.message);
-        return;
-      }
-
-      document.getElementById("title").value = "";
-      document.getElementById("user").value = "";
-      document.getElementById("date").value = "";
-      document.getElementById("status").value = "未着手";
-      document.getElementById("priority").value = "通常";
-      document.getElementById("note").value = "";
-
-      await loadTasks();
-    }
-
-    async function updateStatus(id, status) {
-      const { error } = await supabaseClient
-        .from("tasks")
-        .update({ status })
-        .eq("id", id);
-
-      if (error) {
-        alert("更新エラー: " + error.message);
-        return;
-      }
-
-      await loadTasks();
-    }
-
-    async function editTask(id) {
-      const { data, error } = await supabaseClient
-        .from("tasks")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        alert("取得エラー: " + error.message);
-        return;
-      }
-
-      const newTitle = prompt("業務内容を入力してください", data.title || "");
-      if (newTitle === null) return;
-      if (!newTitle.trim()) {
-        alert("業務内容は必須です");
-        return;
-      }
-
-      const newUser = prompt("担当者を入力してください", data.assigned_to || "未設定");
-      if (newUser === null) return;
-
-      const newDate = prompt("日付を入力してください（例: 2026-04-22）", data.work_date || todayStr());
-      if (newDate === null) return;
-
-      const newNote = prompt("メモを入力してください", data.note || "");
-      if (newNote === null) return;
-
-      const { error: updateError } = await supabaseClient
-        .from("tasks")
-        .update({
-          title: newTitle.trim(),
-          assigned_to: newUser.trim() || "未設定",
-          work_date: newDate || todayStr(),
-          note: newNote.trim()
-        })
-        .eq("id", id);
-
-      if (updateError) {
-        alert("編集エラー: " + updateError.message);
-        return;
-      }
-
-      await loadTasks();
-    }
-
-    async function deleteTask(id) {
-      if (!confirm("この業務を削除しますか？")) return;
-
-      const { error } = await supabaseClient
-        .from("tasks")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-        alert("削除エラー: " + error.message);
-        return;
-      }
-
-      await loadTasks();
-    }
-
-    async function moveUp(id) {
-      await moveTask(id, -1);
-    }
-
-    async function moveDown(id) {
-      await moveTask(id, 1);
-    }
-
-    async function moveTask(id, direction) {
-      const { data, error } = await supabaseClient
-        .from("tasks")
-        .select("id, sort_order")
-        .order("sort_order", { ascending: true });
-
-      if (error) {
-        alert("並び替えエラー: " + error.message);
-        return;
-      }
-
-      const tasks = data || [];
-      const index = tasks.findIndex(t => t.id === id);
-
-      if (index === -1) return;
-
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= tasks.length) return;
-
-      const current = tasks[index];
-      const target = tasks[targetIndex];
-
-      const currentOrder = current.sort_order;
-      const targetOrder = target.sort_order;
-
-      const { error: err1 } = await supabaseClient
-        .from("tasks")
-        .update({ sort_order: -999999 })
-        .eq("id", current.id);
-
-      if (err1) {
-        alert("並び替えエラー: " + err1.message);
-        return;
-      }
-
-      const { error: err2 } = await supabaseClient
-        .from("tasks")
-        .update({ sort_order: currentOrder })
-        .eq("id", target.id);
-
-      if (err2) {
-        alert("並び替えエラー: " + err2.message);
-        return;
-      }
-
-      const { error: err3 } = await supabaseClient
-        .from("tasks")
-        .update({ sort_order: targetOrder })
-        .eq("id", current.id);
-
-      if (err3) {
-        alert("並び替えエラー: " + err3.message);
-        return;
-      }
-
-      await loadTasks();
-    }
-
-    loadTasks();
-  </script>
+    list.appendChild(div);
+  });
+}
+
+async function addTask(){
+  const title = document.getElementById("title").value;
+  const user = document.getElementById("user").value || "未設定";
+  const date = document.getElementById("date").value || today();
+  const status = document.getElementById("status").value;
+  const priority = document.getElementById("priority").value;
+  const note = document.getElementById("note").value;
+
+  if(!title){ alert("入力してください"); return;}
+
+  const { data } = await supabase
+    .from("tasks")
+    .select("sort_order")
+    .order("sort_order",{ascending:false})
+    .limit(1);
+
+  const next = data && data.length ? data[0].sort_order+1 : 1;
+
+  await supabase.from("tasks").insert([{
+    title, assigned_to:user, work_date:date,
+    status, priority, note,
+    sort_order:next
+  }]);
+
+  loadTasks();
+}
+
+async function updateStatus(id,status){
+
+  if(status==="完了"){
+    const { data } = await supabase
+      .from("tasks")
+      .select("sort_order")
+      .order("sort_order",{ascending:false})
+      .limit(1);
+
+    const next = data && data.length ? data[0].sort_order+1 : 1;
+
+    await supabase.from("tasks")
+      .update({status:"完了", sort_order:next})
+      .eq("id",id);
+
+  }else{
+    await supabase.from("tasks")
+      .update({status})
+      .eq("id",id);
+  }
+
+  loadTasks();
+}
+
+async function deleteTask(id){
+  await supabase.from("tasks").delete().eq("id",id);
+  loadTasks();
+}
+
+async function moveTask(id,dir){
+  const { data } = await supabase
+    .from("tasks")
+    .select("id,sort_order")
+    .order("sort_order",{ascending:true});
+
+  const i = data.findIndex(x=>x.id===id);
+  if(i<0) return;
+
+  const j = i+dir;
+  if(j<0 || j>=data.length) return;
+
+  const a=data[i];
+  const b=data[j];
+
+  await supabase.from("tasks").update({sort_order:-999}).eq("id",a.id);
+  await supabase.from("tasks").update({sort_order:a.sort_order}).eq("id",b.id);
+  await supabase.from("tasks").update({sort_order:b.sort_order}).eq("id",a.id);
+
+  loadTasks();
+}
+
+function moveUp(id){ moveTask(id,-1); }
+function moveDown(id){ moveTask(id,1); }
+
+loadTasks();
+</script>
+
 </body>
 </html>
