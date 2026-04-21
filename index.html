@@ -296,14 +296,14 @@
     }
 
     function getTaskColor(task) {
-      if (isLate(task)) return "red";
-      if (task.priority === "緊急") return "red";
-      if (task.status === "書類待ち") return "yellow";
-      if (task.status === "対応中") return "blue";
-      if (task.status === "未着手") return "green";
-      if (task.status === "完了") return "gray";
-      return "gray";
-    }
+  if (task.status === "完了") return "gray";
+  if (isLate(task)) return "red";
+  if (task.priority === "緊急") return "red";
+  if (task.status === "書類待ち") return "yellow";
+  if (task.status === "対応中") return "blue";
+  if (task.status === "未着手") return "green";
+  return "gray";
+}
 
     function escapeHtml(value) {
       if (value == null) return "";
@@ -316,32 +316,37 @@
     }
 
     function renderBadge(task) {
-      let html = "";
+  if (task.status === "完了") {
+    return `
+      <span class="badge badge-gray">完了</span>
+      <span class="badge badge-gray">${task.priority || "通常"}</span>
+    `;
+  }
 
-      if (task.priority === "緊急") {
-        html += `<span class="badge badge-red">緊急</span>`;
-      } else if (task.priority === "重要") {
-        html += `<span class="badge badge-yellow">重要</span>`;
-      } else {
-        html += `<span class="badge badge-gray">通常</span>`;
-      }
+  let html = "";
 
-      if (isLate(task)) {
-        html += `<span class="badge badge-red">期限超過</span>`;
-      }
+  if (task.priority === "緊急") {
+    html += `<span class="badge badge-red">緊急</span>`;
+  } else if (task.priority === "重要") {
+    html += `<span class="badge badge-yellow">重要</span>`;
+  } else {
+    html += `<span class="badge badge-gray">通常</span>`;
+  }
 
-      if (task.status === "書類待ち") {
-        html += `<span class="badge badge-red">書類待ち</span>`;
-      } else if (task.status === "対応中") {
-        html += `<span class="badge badge-blue">対応中</span>`;
-      } else if (task.status === "未着手") {
-        html += `<span class="badge badge-green">未着手</span>`;
-      } else if (task.status === "完了") {
-        html += `<span class="badge badge-gray">完了</span>`;
-      }
+  if (isLate(task)) {
+    html += `<span class="badge badge-red">期限超過</span>`;
+  }
 
-      return html;
-    }
+  if (task.status === "書類待ち") {
+    html += `<span class="badge badge-red">書類待ち</span>`;
+  } else if (task.status === "対応中") {
+    html += `<span class="badge badge-blue">対応中</span>`;
+  } else if (task.status === "未着手") {
+    html += `<span class="badge badge-green">未着手</span>`;
+  }
+
+  return html;
+}
 
     function renderStats(tasks) {
       document.getElementById("stat-total").textContent = tasks.length;
