@@ -1,118 +1,340 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>業務管理</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-<style>
-body { font-family: Arial; padding: 20px; }
-input, select { padding: 6px; margin: 4px; }
-button { margin-left: 5px; }
-.card { border: 1px solid #ccc; padding: 10px; margin: 5px 0; }
-</style>
-</head>
-
-<body>
-
-<h2>業務管理アプリ</h2>
-
-<input id="title" placeholder="業務内容">
-<select id="status">
-  <option>未着手</option>
-  <option>対応中</option>
-  <option>完了</option>
-  <option>書類待ち</option>
-</select>
-
-<input id="user" placeholder="担当者">
-<input type="date" id="date">
-
-<button onclick="addTask()">追加</button>
-
-<hr>
-
-<div id="list"></div>
-
-<script>
-const SUPABASE_URL = "https://hgbkthwqixmguavnyljm.supabase.co";
-const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg"; 
-
-const { createClient } = window.supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function loadTasks() {
-  const { data } = await supabaseClient
-    .from('tasks')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  const list = document.getElementById('list');
-  list.innerHTML = '';
-
-  data.forEach(t => {
-    const div = document.createElement('div');
-    div.className = "card";
-
-    div.innerHTML = `
-      <b>${t.title}</b><br>
-      状態: ${t.status}<br>
-      担当: ${t.assigned_to}<br>
-      日付: ${t.work_date}<br>
-
-      <button onclick="updateStatus('${t.id}','対応中')">対応中</button>
-      <button onclick="updateStatus('${t.id}','完了')">完了</button>
-      <button onclick="deleteTask('${t.id}')">削除</button>
-    `;
-
-    list.appendChild(div);
-  });
-}
-
-async function addTask() {
-  const title = document.getElementById('title').value;
-  const status = document.getElementById('status').value;
-  const user = document.getElementById('user').value || '未設定';
-  const date = document.getElementById('date').value;
-
-  if (!title) {
-    alert("業務内容を入力してください");
-    return;
-  }
-
-  await supabaseClient.from('tasks').insert([
-    {
-      title: title,
-      status: status,
-      assigned_to: user,
-      work_date: date || new Date().toISOString().slice(0,10)
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>業務管理アプリ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5f7fb;
+      color: #222;
     }
-  ]);
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 28px;
+    }
+    .panel {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .form-grid .full {
+      grid-column: 1 / -1;
+    }
+    input, select, button {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      background: #111827;
+      color: #fff;
+    }
+    button.secondary {
+      background: #e5e7eb;
+      color: #111;
+    }
+    .task {
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-left: 8px solid #999;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .task.red { border-left-color: #dc2626; background: #fef2f2; }
+    .task.yellow { border-left-color: #d97706; background: #fffbeb; }
+    .task.blue { border-left-color: #2563eb; background: #eff6ff; }
+    .task.green { border-left-color: #16a34a; background: #f0fdf4; }
+    .task.gray { border-left-color: #6b7280; background: #f9fafb; }
 
-  document.getElementById('title').value = '';
-  loadTasks();
-}
+    .task-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .task-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .meta {
+      font-size: 13px;
+      color: #444;
+      line-height: 1.7;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #eee;
+      margin-right: 6px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .actions button {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+    @media (max-width: 700px) {
+      .form-grid, .filters {
+        grid-template-columns: 1fr;
+      }
+      .task-top {
+        flex-direction: column;
+      }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>業務管理アプリ</h1>
 
-async function updateStatus(id, status) {
-  await supabaseClient
-    .from('tasks')
-    .update({ status: status })
-    .eq('id', id);
+    <div class="panel">
+      <div class="form-grid">
+        <input id="title" class="full" placeholder="業務内容" />
+        <input id="user" placeholder="担当者" />
+        <input id="date" type="date" />
+        <select id="status">
+          <option value="未着手">未着手</option>
+          <option value="対応中">対応中</option>
+          <option value="完了">完了</option>
+          <option value="書類待ち">書類待ち</option>
+        </select>
+        <select id="priority">
+          <option value="通常">通常</option>
+          <option value="重要">重要</option>
+          <option value="緊急">緊急</option>
+        </select>
+        <button class="full" onclick="addTask()">追加</button>
+      </div>
+      <div class="hint">緊急は赤、書類待ちは黄、対応中は青、完了は緑で表示されます。</div>
+    </div>
 
-  loadTasks();
-}
+    <div class="panel">
+      <div class="filters">
+        <input id="search" placeholder="検索..." oninput="loadTasks()" />
+        <select id="filterStatus" onchange="loadTasks()">
+          <option value="">全ての状態</option>
+          <option value="未着手">未着手</option>
+          <option value="対応中">対応中</option>
+          <option value="完了">完了</option>
+          <option value="書類待ち">書類待ち</option>
+        </select>
+        <input id="filterUser" placeholder="担当者で絞り込み" oninput="loadTasks()" />
+      </div>
+    </div>
 
-async function deleteTask(id) {
-  await supabaseClient
-    .from('tasks')
-    .delete()
-    .eq('id', id);
+    <div id="list"></div>
+  </div>
 
-  loadTasks();
-}
+  <script>
+    const SUPABASE_URL = "https://hgbkthwqixmguavnyljm.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg";
 
-loadTasks();
-</script>
+    const { createClient } = window.supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    function getTaskColor(task) {
+      if (task.priority === "緊急") return "red";
+      if (task.status === "書類待ち") return "yellow";
+      if (task.status === "対応中") return "blue";
+      if (task.status === "完了") return "green";
+      return "gray";
+    }
+
+    async function loadTasks() {
+      const { data, error } = await supabaseClient
+        .from("tasks")
+        .select("*")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        alert("読込エラー: " + error.message);
+        return;
+      }
+
+      const search = document.getElementById("search").value.toLowerCase();
+      const filterStatus = document.getElementById("filterStatus").value;
+      const filterUser = document.getElementById("filterUser").value.toLowerCase();
+
+      const filtered = (data || []).filter(t => {
+        const matchSearch =
+          (t.title || "").toLowerCase().includes(search) ||
+          (t.assigned_to || "").toLowerCase().includes(search);
+        const matchStatus = !filterStatus || t.status === filterStatus;
+        const matchUser = !filterUser || (t.assigned_to || "").toLowerCase().includes(filterUser);
+        return matchSearch && matchStatus && matchUser;
+      });
+
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      filtered.forEach((t, index) => {
+        const div = document.createElement("div");
+        div.className = `task ${getTaskColor(t)}`;
+        div.innerHTML = `
+          <div class="task-top">
+            <div>
+              <div class="task-title">${t.title || "(無題)"}</div>
+              <div class="meta">
+                <span class="badge">${t.status || "未着手"}</span>
+                <span class="badge">${t.priority || "通常"}</span><br>
+                担当者: ${t.assigned_to || "未設定"}<br>
+                日付: ${t.work_date || ""}
+              </div>
+            </div>
+            <div>順位: ${index + 1}</div>
+          </div>
+          <div class="actions">
+            <button onclick="updateStatus('${t.id}','未着手')">未着手</button>
+            <button onclick="updateStatus('${t.id}','対応中')">対応中</button>
+            <button onclick="updateStatus('${t.id}','完了')">完了</button>
+            <button onclick="updateStatus('${t.id}','書類待ち')">書類待ち</button>
+            <button class="secondary" onclick="moveUp('${t.id}')">↑ 上へ</button>
+            <button class="secondary" onclick="moveDown('${t.id}')">↓ 下へ</button>
+            <button class="secondary" onclick="deleteTask('${t.id}')">削除</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function addTask() {
+      const title = document.getElementById("title").value.trim();
+      const status = document.getElementById("status").value;
+      const user = document.getElementById("user").value.trim() || "未設定";
+      const date = document.getElementById("date").value || new Date().toISOString().slice(0, 10);
+      const priority = document.getElementById("priority").value;
+
+      if (!title) {
+        alert("業務内容を入力してください");
+        return;
+      }
+
+      const { error } = await supabaseClient.from("tasks").insert([{
+        title,
+        status,
+        assigned_to: user,
+        work_date: date,
+        priority
+      }]);
+
+      if (error) {
+        alert("追加エラー: " + error.message);
+        return;
+      }
+
+      document.getElementById("title").value = "";
+      loadTasks();
+    }
+
+    async function updateStatus(id, status) {
+      const { error } = await supabaseClient
+        .from("tasks")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) {
+        alert("更新エラー: " + error.message);
+        return;
+      }
+      loadTasks();
+    }
+
+    async function deleteTask(id) {
+      if (!confirm("この業務を削除しますか？")) return;
+
+      const { error } = await supabaseClient
+        .from("tasks")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        alert("削除エラー: " + error.message);
+        return;
+      }
+      loadTasks();
+    }
+
+    async function moveUp(id) {
+      const { data, error } = await supabaseClient
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) return;
+
+      const idx = data.findIndex(x => x.id === id);
+      if (idx <= 0) return;
+
+      const current = data[idx];
+      const prev = data[idx - 1];
+
+      await supabaseClient.from("tasks").update({ created_at: prev.created_at }).eq("id", current.id);
+      await supabaseClient.from("tasks").update({ created_at: current.created_at }).eq("id", prev.id);
+      loadTasks();
+    }
+
+    async function moveDown(id) {
+      const { data, error } = await supabaseClient
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) return;
+
+      const idx = data.findIndex(x => x.id === id);
+      if (idx < 0 || idx >= data.length - 1) return;
+
+      const current = data[idx];
+      const next = data[idx + 1];
+
+      await supabaseClient.from("tasks").update({ created_at: next.created_at }).eq("id", current.id);
+      await supabaseClient.from("tasks").update({ created_at: current.created_at }).eq("id", next.id);
+      loadTasks();
+    }
+
+    loadTasks();
+  </script>
 </body>
 </html>
