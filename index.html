@@ -10,13 +10,22 @@
 <style>
 body { font-family: Arial; background:#f5f7fb; margin:0; }
 .container { max-width:900px; margin:auto; padding:20px; }
-.card { background:white; padding:15px; border-radius:10px; margin-bottom:10px; }
+
+.card {
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
 
 .red { border-left:5px solid red; }
 .yellow { border-left:5px solid orange; }
 .gray { background:#eee; }
 
-button { margin:3px; }
+button { margin:3px; padding:5px 8px; }
+
+h2 { margin-bottom:10px; }
 </style>
 </head>
 
@@ -47,7 +56,6 @@ button { margin:3px; }
 <br><br>
 <button onclick="addTask()">追加</button>
 <button onclick="copyYesterday()">昨日の未完了コピー</button>
-
 </div>
 
 <!-- フィルター -->
@@ -64,141 +72,172 @@ button { margin:3px; }
 </div>
 
 <script>
-const supabase = supabase.createClient(
-"https://hgbkthwqixmguavnyljm.supabase.co",
-"sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg"
-)
+const { createClient } = window.supabase;
 
+const supabaseClient = createClient(
+  "https://hgbkthwqixmguavnyljm.supabase.co",
+  "sb_publishable_0qE4sc-ilJEv1uazYKGmSQ_l1rVJpUg"
+);
+
+// 追加
 async function addTask() {
-const title = document.getElementById("title").value
+  const title = document.getElementById("title").value;
 
-if(!title) return alert("入力してください")
+  if(!title) return alert("入力してください");
 
-await supabase.from("tasks").insert([{
-title,
-assigned_to: document.getElementById("person").value,
-work_date: document.getElementById("date").value,
-status: document.getElementById("status").value,
-priority: document.getElementById("priority").value
-}])
+  await supabaseClient.from("tasks").insert([{
+    title,
+    assigned_to: document.getElementById("person").value,
+    work_date: document.getElementById("date").value,
+    status: document.getElementById("status").value,
+    priority: document.getElementById("priority").value
+  }]);
 
-loadTasks()
+  document.getElementById("title").value = "";
+  loadTasks();
 }
 
+// 読み込み
 async function loadTasks() {
-const personFilter = document.getElementById("filterPerson").value
 
-let { data } = await supabase
-.from("tasks")
-.select("*")
+  let { data, error } = await supabaseClient
+    .from("tasks")
+    .select("*");
 
-let list = document.getElementById("list")
-let late = document.getElementById("late")
+  if(error){
+    alert("DBエラー: " + error.message);
+    return;
+  }
 
-list.innerHTML=""
-late.innerHTML=""
+  let list = document.getElementById("list");
+  let late = document.getElementById("late");
 
-const today = new Date().toISOString().slice(0,10)
+  list.innerHTML = "";
+  late.innerHTML = "";
 
-data.sort((a,b)=>{
-if(a.status==="完了") return 1
-if(b.status==="完了") return -1
-return (a.sort_order||0)-(b.sort_order||0)
-})
+  const filter = document.getElementById("filterPerson").value;
+  const today = new Date().toISOString().slice(0,10);
 
-data.forEach(t=>{
+  // 完了は最後
+  data.sort((a,b)=>{
+    if(a.status==="完了") return 1;
+    if(b.status==="完了") return -1;
+    return (a.sort_order||0)-(b.sort_order||0);
+  });
 
-if(personFilter && !t.assigned_to.includes(personFilter)) return
+  data.forEach(t => {
 
-let div = document.createElement("div")
-div.className="card"
+    if(filter && (!t.assigned_to || !t.assigned_to.includes(filter))) return;
 
-if(t.priority==="緊急") div.classList.add("red")
-if(t.status==="書類待ち") div.classList.add("yellow")
-if(t.status==="完了") div.classList.add("gray")
+    let div = document.createElement("div");
+    div.className = "card";
 
-div.innerHTML=`
-<b>${t.title}</b><br>
-担当:${t.assigned_to}<br>
-日付:${t.work_date}<br>
-状態:${t.status}<br>
+    if(t.priority==="緊急") div.classList.add("red");
+    if(t.status==="書類待ち") div.classList.add("yellow");
+    if(t.status==="完了") div.classList.add("gray");
 
-<button onclick="update('${t.id}','未着手')">未着手</button>
-<button onclick="update('${t.id}','対応中')">対応中</button>
-<button onclick="update('${t.id}','完了')">完了</button>
+    div.innerHTML = `
+      <b>${t.title}</b><br>
+      担当: ${t.assigned_to || ""}<br>
+      日付: ${t.work_date || ""}<br>
+      状態: ${t.status}<br>
 
-<button onclick="move('${t.id}',-1)">↑</button>
-<button onclick="move('${t.id}',1)">↓</button>
+      <button onclick="update('${t.id}','未着手')">未着手</button>
+      <button onclick="update('${t.id}','対応中')">対応中</button>
+      <button onclick="update('${t.id}','完了')">完了</button>
 
-<button onclick="del('${t.id}')">削除</button>
-`
+      <button onclick="move('${t.id}',-1)">↑</button>
+      <button onclick="move('${t.id}',1)">↓</button>
 
-if(t.work_date < today && t.status !== "完了"){
-late.appendChild(div.cloneNode(true))
+      <button onclick="del('${t.id}')">削除</button>
+    `;
+
+    // 遅延
+    if(t.work_date && t.work_date < today && t.status !== "完了"){
+      late.appendChild(div.cloneNode(true));
+    }
+
+    list.appendChild(div);
+  });
 }
 
-list.appendChild(div)
-})
-}
-
+// 状態変更
 async function update(id, status){
-await supabase.from("tasks").update({status}).eq("id",id)
-loadTasks()
+  await supabaseClient.from("tasks")
+    .update({status})
+    .eq("id",id);
+
+  loadTasks();
 }
 
+// 削除
 async function del(id){
-await supabase.from("tasks").delete().eq("id",id)
-loadTasks()
+  await supabaseClient.from("tasks")
+    .delete()
+    .eq("id",id);
+
+  loadTasks();
 }
 
+// 並び替え
 async function move(id, direction){
-let { data } = await supabase.from("tasks").select("*")
 
-data.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+  let { data } = await supabaseClient
+    .from("tasks")
+    .select("*");
 
-let index = data.findIndex(x=>x.id===id)
-let target = index + direction
+  data.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
 
-if(target<0 || target>=data.length) return
+  let index = data.findIndex(x=>x.id===id);
+  let target = index + direction;
 
-let temp = data[index].sort_order || index
-data[index].sort_order = data[target].sort_order || target
-data[target].sort_order = temp
+  if(target < 0 || target >= data.length) return;
 
-await supabase.from("tasks").update({sort_order:data[index].sort_order}).eq("id",data[index].id)
-await supabase.from("tasks").update({sort_order:data[target].sort_order}).eq("id",data[target].id)
+  let temp = data[index].sort_order || index;
+  data[index].sort_order = data[target].sort_order || target;
+  data[target].sort_order = temp;
 
-loadTasks()
+  await supabaseClient.from("tasks")
+    .update({sort_order:data[index].sort_order})
+    .eq("id",data[index].id);
+
+  await supabaseClient.from("tasks")
+    .update({sort_order:data[target].sort_order})
+    .eq("id",data[target].id);
+
+  loadTasks();
 }
 
+// 昨日の未完了コピー
 async function copyYesterday(){
 
-const yesterday = new Date()
-yesterday.setDate(yesterday.getDate()-1)
-const y = yesterday.toISOString().slice(0,10)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate()-1);
+  const y = yesterday.toISOString().slice(0,10);
 
-let { data } = await supabase
-.from("tasks")
-.select("*")
-.eq("work_date",y)
-.neq("status","完了")
+  let { data } = await supabaseClient
+    .from("tasks")
+    .select("*")
+    .eq("work_date",y)
+    .neq("status","完了");
 
-let today = new Date().toISOString().slice(0,10)
+  const today = new Date().toISOString().slice(0,10);
 
-for(let t of data){
-await supabase.from("tasks").insert([{
-title: t.title,
-assigned_to: t.assigned_to,
-work_date: today,
-status: "未着手",
-priority: t.priority
-}])
+  for(let t of data){
+    await supabaseClient.from("tasks").insert([{
+      title: t.title,
+      assigned_to: t.assigned_to,
+      work_date: today,
+      status: "未着手",
+      priority: t.priority
+    }]);
+  }
+
+  loadTasks();
 }
 
-loadTasks()
-}
-
-loadTasks()
+loadTasks();
 </script>
+
 </body>
 </html>
