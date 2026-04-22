@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>業務管理アプリ</title>
+  <title>業務管理</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; }
@@ -22,10 +22,28 @@
     }
 
     h1 {
-      margin: 0 0 18px;
+      margin: 0;
       font-size: 32px;
-      font-weight: 800;
+      font-weight: 900;
       color: #0f172a;
+      text-align: center;
+    }
+
+    .main-title-wrap {
+      margin-bottom: 18px;
+    }
+
+    .main-slogan {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1.45;
+      letter-spacing: 0.03em;
+      background: linear-gradient(135deg, #fff7cc 0%, #ffd700 35%, #ffef8a 55%, #d4a017 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35), 0 4px 16px rgba(191, 138, 0, 0.25);
     }
 
     .panel {
@@ -38,7 +56,7 @@
 
     .topbar {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
@@ -48,6 +66,8 @@
     .sub {
       font-size: 13px;
       color: #6b7280;
+      text-align: center;
+      margin-top: 6px;
     }
 
     .grid2, .grid3 {
@@ -196,29 +216,15 @@
     }
 
     .task.red::before,
-    .task.red::after {
-      background: #dc2626;
-    }
-
+    .task.red::after { background: #dc2626; }
     .task.yellow::before,
-    .task.yellow::after {
-      background: #d97706;
-    }
-
+    .task.yellow::after { background: #d97706; }
     .task.blue::before,
-    .task.blue::after {
-      background: #2563eb;
-    }
-
+    .task.blue::after { background: #2563eb; }
     .task.green::before,
-    .task.green::after {
-      background: #16a34a;
-    }
-
+    .task.green::after { background: #16a34a; }
     .task.gray::before,
-    .task.gray::after {
-      background: #6b7280;
-    }
+    .task.gray::after { background: #6b7280; }
 
     .task-top {
       display: flex;
@@ -259,35 +265,11 @@
       margin-bottom: 6px;
     }
 
-    .badge-red {
-      background: #fee2e2;
-      color: #b91c1c;
-      border: 1px solid #fecaca;
-    }
-
-    .badge-yellow {
-      background: #fef3c7;
-      color: #b45309;
-      border: 1px solid #fde68a;
-    }
-
-    .badge-blue {
-      background: #dbeafe;
-      color: #1d4ed8;
-      border: 1px solid #bfdbfe;
-    }
-
-    .badge-green {
-      background: #dcfce7;
-      color: #15803d;
-      border: 1px solid #bbf7d0;
-    }
-
-    .badge-gray {
-      background: #e5e7eb;
-      color: #374151;
-      border: 1px solid #d1d5db;
-    }
+    .badge-red { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-yellow { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-blue { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .badge-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-gray { background: #e5e7eb; color: #374151; border: 1px solid #d1d5db; }
 
     .note {
       margin-top: 12px;
@@ -351,30 +333,29 @@
       transform: scale(1.1);
     }
 
-    .slogan {
+    .week-slogan {
       margin-top: 28px;
       margin-bottom: 16px;
       padding: 18px 20px;
       border-radius: 18px;
-      background: linear-gradient(135deg, #7f1d1d, #dc2626);
       color: #ffffff;
       text-align: center;
-      box-shadow: 0 8px 22px rgba(127, 29, 29, 0.28);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.22);
       border: 2px solid rgba(255,255,255,0.15);
+      transition: background 0.3s ease;
     }
 
-    .slogan-main {
-      font-size: 26px;
+    .week-slogan-main {
+      font-size: 24px;
       font-weight: 900;
-      letter-spacing: 0.03em;
       line-height: 1.5;
     }
 
-    .slogan-sub {
+    .week-slogan-sub {
       margin-top: 8px;
       font-size: 14px;
       font-weight: 700;
-      color: #fee2e2;
+      color: rgba(255,255,255,0.92);
     }
 
     @media (max-width: 900px) {
@@ -386,45 +367,33 @@
       .grid2 { grid-template-columns: 1fr; }
       .task-top { flex-direction: column; }
       h1 { font-size: 28px; }
+      .main-slogan { font-size: 21px; }
       .stats { grid-template-columns: 1fr 1fr; }
       .task-title { font-size: 20px; }
       .task-rank { text-align: left; }
-      .slogan-main { font-size: 21px; }
-      .slogan-sub { font-size: 13px; }
+      .week-slogan-main { font-size: 20px; }
+      .week-slogan-sub { font-size: 13px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <div class="main-title-wrap">
+      <h1>業務管理</h1>
+      <div class="main-slogan">Trust Humanの成長は、私たち一人一人の責任から。</div>
+      <div class="sub">安定版 / Supabase連携 / 期限近い順</div>
+    </div>
+
     <div class="topbar">
-      <div>
-        <h1>業務管理アプリ</h1>
-        <div class="sub">安定版 / Supabase連携 / 期限近い順</div>
-      </div>
       <button class="secondary" onclick="loadTasks()">再読み込み</button>
     </div>
 
     <div class="stats">
-      <div class="stat">
-        <div class="stat-title">総件数</div>
-        <div class="stat-value" id="stat-total">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">未着手</div>
-        <div class="stat-value" id="stat-todo">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">対応中</div>
-        <div class="stat-value" id="stat-doing">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">完了</div>
-        <div class="stat-value" id="stat-done">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-title">遅延</div>
-        <div class="stat-value" id="stat-late">0</div>
-      </div>
+      <div class="stat"><div class="stat-title">総件数</div><div class="stat-value" id="stat-total">0</div></div>
+      <div class="stat"><div class="stat-title">未着手</div><div class="stat-value" id="stat-todo">0</div></div>
+      <div class="stat"><div class="stat-title">対応中</div><div class="stat-value" id="stat-doing">0</div></div>
+      <div class="stat"><div class="stat-title">完了</div><div class="stat-value" id="stat-done">0</div></div>
+      <div class="stat"><div class="stat-title">遅延</div><div class="stat-value" id="stat-late">0</div></div>
     </div>
 
     <div class="panel">
@@ -479,9 +448,9 @@
     <div class="section-title late-title">遅延一覧</div>
     <div id="late"></div>
 
-    <div class="slogan">
-      <div class="slogan-main" id="sloganMain">Trust Humanの成長は、私たち一人一人の責任から。</div>
-      <div class="slogan-sub" id="sloganSub">責任を持って、最後までやり切る。</div>
+    <div class="week-slogan" id="weekSloganBox">
+      <div class="week-slogan-main" id="weekSloganMain">責任を持って、最後までやり切る。</div>
+      <div class="week-slogan-sub" id="weekSloganSub">一人一人の行動が、Trust Humanの信用を支える。</div>
     </div>
   </div>
 
@@ -497,21 +466,73 @@
       return new Date().toISOString().slice(0, 10);
     }
 
-    function updateSloganByTime() {
-      const hour = new Date().getHours();
-      const sloganMain = document.getElementById("sloganMain");
-      const sloganSub = document.getElementById("sloganSub");
+    function updateDynamicSlogan() {
+      const now = new Date();
+      const day = now.getDay();
+      const hour = now.getHours();
+      const main = document.getElementById("weekSloganMain");
+      const sub = document.getElementById("weekSloganSub");
+      const box = document.getElementById("weekSloganBox");
 
-      if (hour < 12) {
-        sloganMain.textContent = "今日の仕事は、今日やり切る。";
-        sloganSub.textContent = "朝の行動が、一日の結果を決める。";
-      } else if (hour < 17) {
-        sloganMain.textContent = "途中で止まらず、結果までつなげる。";
-        sloganSub.textContent = "責任ある行動が、Trust Humanの信用をつくる。";
-      } else {
-        sloganMain.textContent = "今日の結果で、自分の責任を示す。";
-        sloganSub.textContent = "やり残しを減らし、明日につながる仕事をする。";
-      }
+      const dayThemes = {
+        0: { base: ["#0f766e", "#14b8a6"], name: "日曜日" },
+        1: { base: ["#1d4ed8", "#3b82f6"], name: "月曜日" },
+        2: { base: ["#0f766e", "#10b981"], name: "火曜日" },
+        3: { base: ["#7c3aed", "#a855f7"], name: "水曜日" },
+        4: { base: ["#b45309", "#f59e0b"], name: "木曜日" },
+        5: { base: ["#be123c", "#f43f5e"], name: "金曜日" },
+        6: { base: ["#374151", "#6b7280"], name: "土曜日" }
+      };
+
+      const timeSlots = {
+        morning: {
+          label: "朝",
+          messages: {
+            0: ["日曜日の朝は、来週の準備で差がつく。", "整える人が、次の一週間を制する。"],
+            1: ["月曜の朝は、一週間の流れを決める。", "最初の動きで、結果は大きく変わる。"],
+            2: ["火曜の朝は、昨日の続きではなく前進の日。", "今日の成果を、今日の責任でつくる。"],
+            3: ["水曜の朝は、中だるみを許さない。", "責任感の差が、ここで見え始める。"],
+            4: ["木曜の朝は、やり残しを減らす準備をする。", "後回しをなくせば、仕事は軽くなる。"],
+            5: ["金曜の朝は、結果で締める意識を持つ。", "週末前ほど、仕事の質が問われる。"],
+            6: ["土曜の朝は、基本を崩さず積み上げる。", "小さな責任が、大きな信頼をつくる。"]
+          }
+        },
+        afternoon: {
+          label: "午後",
+          messages: {
+            0: ["日曜の午後は、来週の不安を減らす時間。", "準備の質が、月曜の強さになる。"],
+            1: ["月曜の午後は、止まらず結果へつなげる。", "始めただけで終わらせない。"],
+            2: ["火曜の午後は、進捗で責任を示す。", "動いた証拠は、結果に残る。"],
+            3: ["水曜の午後は、責任の差が数字に出る。", "ここで踏ん張れる人が強い。"],
+            4: ["木曜の午後は、完了へ近づける時間。", "やり残しを明日に逃がさない。"],
+            5: ["金曜の午後は、結果で一週間を締める。", "最後まで責任を持って終わらせる。"],
+            6: ["土曜の午後は、集中の質が問われる。", "静かな時間ほど、本気が見える。"]
+          }
+        },
+        evening: {
+          label: "終業前",
+          messages: {
+            0: ["日曜の終わりは、次の一週間への助走。", "明日を軽くする準備が、今日の責任。"],
+            1: ["月曜の終わりは、やり残しを残さない。", "初日の詰めが、一週間の信用になる。"],
+            2: ["火曜の終わりは、途中の仕事を放置しない。", "中途半端は、信頼を下げる。"],
+            3: ["水曜の終わりは、自分の責任を見直す。", "結果のない努力は、評価されない。"],
+            4: ["木曜の終わりは、金曜を軽くする準備を。", "整理された仕事は、次につながる。"],
+            5: ["金曜の終わりは、一週間の責任を形にする。", "結果で終える人が、信頼される。"],
+            6: ["土曜の終わりは、来週への姿勢が問われる。", "小さな締めが、大きな差を生む。"]
+          }
+        }
+      };
+
+      let slotKey = "morning";
+      if (hour >= 12 && hour < 17) slotKey = "afternoon";
+      if (hour >= 17) slotKey = "evening";
+
+      const theme = dayThemes[day];
+      const msg = timeSlots[slotKey].messages[day];
+
+      box.style.background = `linear-gradient(135deg, ${theme.base[0]}, ${theme.base[1]})`;
+      main.textContent = `${theme.name}・${timeSlots[slotKey].label}｜${msg[0]}`;
+      sub.textContent = msg[1];
     }
 
     function escapeHtml(value) {
@@ -944,7 +965,7 @@
       await loadTasks();
     }
 
-    updateSloganByTime();
+    updateDynamicSlogan();
     loadTasks();
   </script>
 </body>
