@@ -351,6 +351,32 @@
       transform: scale(1.1);
     }
 
+    .slogan {
+      margin-top: 28px;
+      margin-bottom: 16px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #7f1d1d, #dc2626);
+      color: #ffffff;
+      text-align: center;
+      box-shadow: 0 8px 22px rgba(127, 29, 29, 0.28);
+      border: 2px solid rgba(255,255,255,0.15);
+    }
+
+    .slogan-main {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      line-height: 1.5;
+    }
+
+    .slogan-sub {
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fee2e2;
+    }
+
     @media (max-width: 900px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
       .grid3 { grid-template-columns: 1fr; }
@@ -363,6 +389,8 @@
       .stats { grid-template-columns: 1fr 1fr; }
       .task-title { font-size: 20px; }
       .task-rank { text-align: left; }
+      .slogan-main { font-size: 21px; }
+      .slogan-sub { font-size: 13px; }
     }
   </style>
 </head>
@@ -450,6 +478,11 @@
 
     <div class="section-title late-title">遅延一覧</div>
     <div id="late"></div>
+
+    <div class="slogan">
+      <div class="slogan-main" id="sloganMain">Trust Humanの成長は、私たち一人一人の責任から。</div>
+      <div class="slogan-sub" id="sloganSub">責任を持って、最後までやり切る。</div>
+    </div>
   </div>
 
   <script>
@@ -462,6 +495,23 @@
 
     function todayStr() {
       return new Date().toISOString().slice(0, 10);
+    }
+
+    function updateSloganByTime() {
+      const hour = new Date().getHours();
+      const sloganMain = document.getElementById("sloganMain");
+      const sloganSub = document.getElementById("sloganSub");
+
+      if (hour < 12) {
+        sloganMain.textContent = "今日の仕事は、今日やり切る。";
+        sloganSub.textContent = "朝の行動が、一日の結果を決める。";
+      } else if (hour < 17) {
+        sloganMain.textContent = "途中で止まらず、結果までつなげる。";
+        sloganSub.textContent = "責任ある行動が、Trust Humanの信用をつくる。";
+      } else {
+        sloganMain.textContent = "今日の結果で、自分の責任を示す。";
+        sloganSub.textContent = "やり残しを減らし、明日につながる仕事をする。";
+      }
     }
 
     function escapeHtml(value) {
@@ -894,10 +944,8 @@
       await loadTasks();
     }
 
+    updateSloganByTime();
     loadTasks();
   </script>
 </body>
 </html>
-```
-
-Dán xong là dùng được. Nếu anh muốn, bước tiếp theo tôi sẽ làm tiếp phần **chỉ hiện việc của tuần này** hoặc **bộ lọc theo ngày cụ thể**.
