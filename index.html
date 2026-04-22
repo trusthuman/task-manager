@@ -234,7 +234,6 @@
       color: #111827;
       margin-bottom: 8px;
       line-height: 1.4;
-      padding-right: 12px;
     }
 
     .task-rank {
@@ -333,6 +332,20 @@
       box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
     }
 
+    .checkbox-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .checkbox-row input {
+      width: auto;
+      transform: scale(1.1);
+    }
+
     @media (max-width: 900px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
       .grid3 { grid-template-columns: 1fr; }
@@ -414,6 +427,10 @@
           <option value="書類待ち">書類待ち</option>
         </select>
         <input id="filterPerson" placeholder="担当者で絞り込み" oninput="loadTasks()" />
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="showDone" onchange="loadTasks()" />
+        <label for="showDone">完了を表示する</label>
       </div>
     </div>
 
@@ -610,6 +627,7 @@
       const search = (document.getElementById("search").value || "").toLowerCase();
       const filterPerson = (document.getElementById("filterPerson").value || "").toLowerCase();
       const filterStatus = document.getElementById("filterStatus").value || "";
+      const showDone = document.getElementById("showDone").checked;
 
       let tasks = (data || []).map(t => ({
         ...t,
@@ -628,8 +646,9 @@
 
         const matchPerson = !filterPerson || (t.assigned_to || "").toLowerCase().includes(filterPerson);
         const matchStatus = !filterStatus || t.status === filterStatus;
+        const matchDone = showDone || t.status !== "完了";
 
-        return matchSearch && matchPerson && matchStatus;
+        return matchSearch && matchPerson && matchStatus && matchDone;
       });
 
       tasks.sort((a, b) => {
